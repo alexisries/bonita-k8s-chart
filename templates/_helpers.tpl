@@ -60,3 +60,176 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+
+{{/*
+Custom data
+*/}}
+
+{{/*
+Return platform password
+*/}}
+{{- define "bonita.platformPassword" -}}
+{{- if .Values.credentials.platformPassword }}
+    {{- .Values.credentials.platformPassword -}}
+{{- else -}}
+    {{- randAlphaNum 10 -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return tenant password
+*/}}
+{{- define "bonita.tenantPassword" -}}
+{{- if .Values.credentials.tenantPassword }}
+    {{- .Values.credentials.tenantPassword -}}
+{{- else -}}
+    {{- randAlphaNum 10 -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return the bonita database name
+*/}}
+{{- define "bonita.bonitaDb.database" -}}
+    {{- if .Values.credentials.bonitaDatabase.database -}}
+        {{- printf "%s" .Values.credentials.bonitaDatabase.database -}}
+    {{- else }}
+        {{- printf "bonitadb" -}}
+    {{- end -}}
+{{- end -}}
+
+{{/*
+Return the bonita database user
+*/}}
+{{- define "bonita.bonitaDb.user" -}}
+    {{- if .Values.credentials.bonitaDatabase.user -}}
+        {{- printf "%s" .Values.credentials.bonitaDatabase.user -}}
+    {{- else  }}
+        {{- printf "bonitauser" -}}
+    {{- end -}}
+{{- end -}}
+
+{{/*
+Return bonita database  password
+*/}}
+{{- define "bonita.bonitaDb.password" -}}
+{{- if .Values.credentials.bonitaDatabase.password }}
+    {{- .Values.credentials.bonitaDatabase.password -}}
+{{- else -}}
+    {{- randAlphaNum 10 -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return the business database name
+*/}}
+{{- define "bonita.businessDb.database" -}}
+    {{- if .Values.credentials.businessDatabase.database -}}
+        {{- printf "%s" .Values.credentials.businessDatabase.database -}}
+    {{- else  }}
+        {{- printf "businessdb" -}}
+    {{- end -}}
+{{- end -}}
+
+{{/*
+Return the business database user
+*/}}
+{{- define "bonita.businessDb.user" -}}
+    {{- if .Values.credentials.businessDatabase.user -}}
+        {{- printf "%s" .Values.credentials.businessDatabase.user -}}
+    {{- else  }}
+        {{- printf "businessuser" -}}
+    {{- end -}}
+{{- end -}}
+
+{{/*
+Return bonita business database password
+*/}}
+{{- define "bonita.businessDb.password" -}}
+{{- if .Values.credentials.businessDatabase.password }}
+    {{- .Values.credentials.businessDatabase.password -}}
+{{- else -}}
+    {{- randAlphaNum 10 -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return the bonita credentials secret name
+*/}}
+{{- define "bonita.credentialsSecretName" -}}
+{{- if .Values.existingBonitaCredentialsSecret -}}
+    {{- printf "%s" (tpl .Values.existingBonitaCredentialsSecret $) -}}
+{{- else -}}
+    {{- printf "%s-credentials" (include "bonita.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Create a default fully qualified app name for postgresql.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+*/}}
+{{- define "bonita.postgresql.fullname" -}}
+{{- include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" $) -}}
+{{- end -}}
+
+{{/*
+Return the name of the database host
+*/}}
+{{- define "bonita.postgresHost" -}}
+{{- if .Values.postgresql.enabled }}
+    {{- printf "%s" (include "bonita.postgresql.fullname" .) -}}
+{{- else -}}
+    {{- printf "%s" .Values.externalDatabase.host -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Return the database port
+*/}}
+{{- define "bonita.postgresPort" -}}
+{{- if .Values.postgresql.enabled }}
+    {{- printf "5432" -}}
+{{- else -}}
+    {{- printf "%d" (.Values.externalDatabase.port | int ) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return the database user
+*/}}
+{{- define "bonita.postgresUser" -}}
+{{- if .Values.postgresql.enabled }}
+    {{- printf "%s" .Values.postgresql.postgresqlUsername -}}
+{{- else -}}
+    {{- printf "%s" .Values.externalDatabase.user -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return the database secret Name
+*/}}
+{{- define "bonita.postgresSecretName" -}}
+{{- if .Values.postgresql.enabled }}
+    {{- if .Values.postgresql.existingSecret -}}
+        {{- printf "%s" .Values.postgresql.existingSecret -}}
+    {{- else -}}
+        {{- printf "%s" (include "bonita.postgresql.fullname" .) -}}
+    {{- end -}}
+{{- else if .Values.externalDatabase.existingSecret -}}
+    {{- printf "%s" .Values.externalDatabase.existingSecret -}}
+{{- else -}}
+    {{- printf "%s-externaldb" (include "bonita.fullname" .) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return the database vendor
+*/}}
+{{- define "bonita.dbVendor" -}}
+{{- if .Values.postgresql.enabled }}
+    {{- printf "postgres" -}}
+{{- else -}}
+    {{- printf "%s" .Values.externalDatabase.type -}}
+{{- end -}}
+{{- end -}}

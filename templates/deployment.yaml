@@ -20,7 +20,7 @@ spec:
       labels:
         {{- include "bonita.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with .Values.imagePullSecrets }}
+      {{- with .Values.image.pullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -33,9 +33,53 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PLATFORM_LOGIN
+              value: {{ .Values.credentials.platformLogin }}
+            - name: PLATFORM_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "bonita.credentialsSecretName" . }}
+                  key: "platform-password"
+            - name: TENANT_LOGIN
+              value: {{ .Values.credentials.tenantLogin }}
+            - name: TENANT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "bonita.credentialsSecretName" . }}
+                  key: "tenant-password"
+            {{- if or .Values.postgresql.enabled .Values.externalDatabase.enabled  }}
+            - name: DB_VENDOR
+              value: {{ include "bonita.dbVendor" . | quote }}
+            - name: DB_HOST
+              value: {{ include "bonita.postgresHost" . | quote }}
+            - name: POSTGRES_ENV_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ include "bonita.postgresSecretName" . }}"
+                  key: "postgresql-password"
+            - name: DB_NAME
+              value: {{ include "bonita.bonitaDb.database" . | quote}}
+            - name: DB_USER
+              value: {{ include "bonita.bonitaDb.user" . | quote}}
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ include "bonita.credentialsSecretName" . }}"
+                  key: "bonita-db-password"
+            - name: BIZ_DB_NAME
+              value: {{ include "bonita.businessDb.database" . | quote}}
+            - name: BIZ_DB_USER
+              value: {{ include "bonita.businessDb.user" . | quote}}
+            - name: BIZ_DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ include "bonita.credentialsSecretName" . }}"
+                  key: "business-db-password"
+            {{- end }}
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
               protocol: TCP
           livenessProbe:
             httpGet:
@@ -47,6 +91,11 @@ spec:
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.initScriptsConfigMapName }}
+          volumeMounts:
+          - name: init-scripts
+            mountPath: /opt/custom-init.d
+          {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -59,3 +108,11 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if .Values.initScriptsConfigMapName }}
+      volumes:
+      - name: init-scripts
+        configMap:
+          name: {{ .Values.initScriptsConfigMapName }}
+          defaultMode: 0777
+      {{- end }}
+

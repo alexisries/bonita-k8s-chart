@@ -5,18 +5,21 @@
 replicaCount: 1
 
 image:
-  repository: nginx
+  repository: bonita
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
+  pullSecrets: []
 
-imagePullSecrets: []
+# Configmap containing one or more init scripts to run before starting Bonita
+initScriptsConfigMapName: ""
+
 nameOverride: ""
 fullnameOverride: ""
 
 serviceAccount:
   # Specifies whether a service account should be created
-  create: true
+  create: false
   # Annotations to add to the service account
   annotations: {}
   # The name of the service account to use.
@@ -80,3 +83,95 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+credentials:
+  # If you do not set a password, a random password will be generated
+  tenantLogin: "install"
+  tenantPassword: "install"
+
+  platformLogin: "platformAdmin"
+  platformPassword: "platform"
+
+  bonitaDatabase:
+    database: "bonitadb"
+    user: "bonitauser"
+    password: "bonitapass"
+
+  businessDatabase:
+    database: "businessdb"
+    user: "businessuser"
+    password: "businesspass"
+
+postgresql:
+  ## @param postgresql.enabled deploy a PostgreSQL server on k8s
+  ## To use an external database set this to false and configure the `externalDatabase.*` parameters
+  ##
+  enabled: true
+
+  image:
+    debug: false
+
+  ## @param postgresql.postgresqlUsername PostgreSQL user (has superuser privileges if username is `postgres`)
+  ## ref: https://github.com/bitnami/bitnami-docker-postgresql/blob/master/README.md#setting-the-root-password-on-first-run
+  ##
+  postgresqlUsername: "postgres"
+
+  ## @param postgresqlPassword PostgreSQL user password
+  ## ref: https://github.com/bitnami/bitnami-docker-postgresql/blob/master/README.md#setting-the-root-password-on-first-run
+  ## If you do not set a password, a random password will be generated
+  ##
+  postgresqlPassword: "postgres"
+
+  ## @param postgresqlPostgresPassword PostgreSQL admin password (used when `postgresqlUsername` is not `postgres`, in which case`postgres` is the admin username)
+  ## ref: https://github.com/bitnami/bitnami-docker-postgresql/blob/master/README.md#creating-a-database-user-on-first-run (see note!)
+  postgresqlPostgresPassword: ""
+
+  ## @param existingSecret Name of existing secret to use for PostgreSQL passwords
+  ## The secret has to contain the keys postgresql-password which is the password for postgresqlUsername when it is
+  ## different of postgres, postgresql-postgres-password which will override postgresqlPassword,
+  ## postgresql-replication-password which will override replication.password and postgresql-ldap-password which will be
+  ## used to authenticate on LDAP. The value is evaluated as a template.
+  ## e.g:
+  ## existingSecret: secret
+  ##
+  existingSecret: ""
+
+  ## @param postgresql.postgresqlExtendedConf Extended Runtime Config Parameters (appended to main or default configuration)
+  ## Alternatively, you can put your *.conf under the files/conf.d/ directory
+  ## https://github.com/bitnami/bitnami-docker-postgresql#allow-settings-to-be-loaded-from-files-other-than-the-default-postgresqlconf
+  ##
+  postgresqlExtendedConf:
+    maxPreparedTransactions : 100
+
+externalDatabase:
+  ## @param externalDatabase.enabled Enable using a external database
+  ## If you do not activate an external database and do not activate the deployment of a postgresql database, the application will use a local H2 database
+  ##
+  enabled: false
+
+  ## @param externalDatabase.type External Database type, possible values : h2, postgres, mysql
+  ##
+  type: "postgres"
+
+  ## @param externalDatabase.host External Database server host
+  ##
+  host: localhost
+
+  ## @param externalDatabase.port External Database server port
+  ##
+  port: 5432
+
+  ## @param externalDatabase.user External Database username
+  ##
+  user: bonitasoft
+
+  ## @param externalDatabase.password External Database user password
+  ##
+  password: "postgres"
+
+  ## @param externalDatabase.existingSecret The name of an existing secret with database credentials
+  ## NOTE: Must contain key `postgresql-password`
+  ## NOTE: When it's set, the `externalDatabase.password` parameter is ignored
+  ##
+  existingSecret: ""
+  
