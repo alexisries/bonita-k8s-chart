@@ -178,7 +178,7 @@ Hence the Bonita Docker image startup sequence can be described as follows:
 3. Execute custom initialization *.sh scripts found in the container’s /opt/custom-init.d folder
 4. Start Tomcat server
 
-To inject a script with the Helm Chart, you can create a configmap that contains your script and specify the configmap name in the initscriptsConfigMap variable in the values.yaml file.
+To inject a script with the Helm Chart, you can create a configmap that contains your script and specify the configmap name in the initScriptsConfigMapName variable in the values.yaml file.
 
 For example we will make a script that replaces all INFO logs levels to WARNING: 
 
