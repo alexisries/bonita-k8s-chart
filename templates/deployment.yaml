@@ -27,6 +27,20 @@ spec:
       serviceAccountName: {{ include "bonita.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.postgresql.enabled }}
+      initContainers:
+      - name: wait-postgres
+        image: alpine
+        env:
+        - name: POSTGRESQL_HOST
+          value: {{ include "bonita.postgresHost" . | quote }}
+        - name: POSTGRESQL_PORT
+          value: {{ include "bonita.postgresPort" . | quote }}
+        command:
+        - sh
+        - -c
+        - "for i in $(seq 1 200); do nc -z -w3 ${POSTGRESQL_HOST} ${POSTGRESQL_PORT} && exit 0 || sleep 3; done; exit 1"
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
